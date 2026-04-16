@@ -4,6 +4,7 @@ import { analyzeBias } from "./priceAction";
 const API_BASE = "https://api.twelvedata.com";
 
 interface TwelveDataResponse {
+  code?: number;
   values?: Array<{
     open: string;
     high: string;
@@ -14,6 +15,12 @@ interface TwelveDataResponse {
   message?: string;
 }
 
+const RATE_LIMIT_WAIT_MS = 65000;
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function fetchCandles(
   pair: string,
   interval: string,
@@ -22,20 +29,33 @@ async function fetchCandles(
 ): Promise<Candle[]> {
   const url = `${API_BASE}/time_series?symbol=${encodeURIComponent(pair)}&interval=${interval}&outputsize=${count}&apikey=${apiKey}`;
 
-  const res = await fetch(url);
-  const data: TwelveDataResponse = await res.json();
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const res = await fetch(url);
+    const data: TwelveDataResponse = await res.json();
 
-  if (!data.values || data.values.length === 0) {
-    throw new Error(data.message || `No data for ${pair} ${interval}`);
+    if (data.status === "error" && data.code === 429) {
+      if (attempt === 0) {
+        await delay(RATE_LIMIT_WAIT_MS);
+        continue;
+      }
+
+      throw new Error("API rate limit reached. Please wait about a minute and try again.");
+    }
+
+    if (!data.values || data.values.length === 0) {
+      throw new Error(data.message || `No data for ${pair} ${interval}`);
+    }
+
+    // API returns newest first, reverse for chronological order
+    return data.values.reverse().map((v) => ({
+      open: parseFloat(v.open),
+      high: parseFloat(v.high),
+      low: parseFloat(v.low),
+      close: parseFloat(v.close),
+    }));
   }
 
-  // API returns newest first, reverse for chronological order
-  return data.values.reverse().map((v) => ({
-    open: parseFloat(v.open),
-    high: parseFloat(v.high),
-    low: parseFloat(v.low),
-    close: parseFloat(v.close),
-  }));
+  throw new Error(`Unable to fetch data for ${pair} ${interval}`);
 }
 
 export async function analyzeAllPairs(
@@ -54,13 +74,14 @@ export async function analyzeAllPairs(
       try {
         // Rate limiting: Twelve Data free tier = 8 req/min
         if (current > 0 && current % 7 === 0) {
-          await new Promise((r) => setTimeout(r, 62000)); // wait ~1 min
+          await delay(62000);
         }
 
         const candles = await fetchCandles(pair, tf.value, tf.candles, apiKey);
         biases[tf.value] = analyzeBias(candles);
-      } catch {
-        biases[tf.value] = "Neutral";
+      } catch (error) {
+        const message = error instanceof Error ? error.message : `Unable to analyze ${pair} ${tf.label}`;
+        throw new Error(`${pair} ${tf.label}: ${message}`);
       }
 
       current++;
