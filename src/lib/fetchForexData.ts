@@ -1,4 +1,4 @@
-import { Candle, FOREX_PAIRS, TIMEFRAMES, PairAnalysis } from "./forexPairs";
+import { Candle, Bias, FOREX_PAIRS, TIMEFRAMES, PairAnalysis } from "./forexPairs";
 import { analyzeBias } from "./priceAction";
 
 const API_BASE = "https://api.twelvedata.com";
