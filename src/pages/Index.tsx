@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import BiasTable from "@/components/BiasTable";
-import { PairAnalysis } from "@/lib/forexPairs";
+import PairSelector from "@/components/PairSelector";
+import { PairAnalysis, FOREX_PAIRS } from "@/lib/forexPairs";
 import { analyzeAllPairs, generateDemoData } from "@/lib/fetchForexData";
 import { Activity, Zap, Key } from "lucide-react";
 
@@ -12,9 +13,10 @@ const Index = () => {
   const [progress, setProgress] = useState({ current: 0, total: 0, pair: "" });
   const [apiKey, setApiKey] = useState("");
   const [mode, setMode] = useState<"idle" | "demo" | "live">("idle");
+  const [selectedPairs, setSelectedPairs] = useState<string[]>([...FOREX_PAIRS]);
 
   const handleDemo = () => {
-    setData(generateDemoData());
+    setData(generateDemoData(selectedPairs));
     setMode("demo");
   };
 
@@ -23,7 +25,7 @@ const Index = () => {
     setLoading(true);
     setMode("live");
     try {
-      const results = await analyzeAllPairs(apiKey, (current, total, pair) => {
+      const results = await analyzeAllPairs(apiKey, selectedPairs, (current, total, pair) => {
         setProgress({ current, total, pair });
       });
       setData(results);
@@ -74,14 +76,20 @@ const Index = () => {
               </p>
             </div>
 
+            <PairSelector
+              selectedPairs={selectedPairs}
+              onSelectionChange={setSelectedPairs}
+            />
+
             <div className="space-y-4">
               <Button
                 onClick={handleDemo}
                 size="lg"
                 className="w-full gap-2 text-base"
+                disabled={selectedPairs.length === 0}
               >
                 <Zap className="w-5 h-5" />
-                Quick Demo (Sample Data)
+                Quick Demo ({selectedPairs.length} pairs)
               </Button>
 
               <div className="relative">
@@ -108,7 +116,7 @@ const Index = () => {
                 </div>
                 <Button
                   onClick={handleLiveAnalysis}
-                  disabled={!apiKey.trim()}
+                  disabled={!apiKey.trim() || selectedPairs.length === 0}
                   variant="outline"
                   className="gap-2"
                 >
