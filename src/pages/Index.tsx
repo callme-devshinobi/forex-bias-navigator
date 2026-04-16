@@ -12,16 +12,20 @@ const Index = () => {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0, pair: "" });
   const [apiKey, setApiKey] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<"idle" | "demo" | "live">("idle");
   const [selectedPairs, setSelectedPairs] = useState<string[]>([...FOREX_PAIRS]);
 
   const handleDemo = () => {
+    setError(null);
     setData(generateDemoData(selectedPairs));
     setMode("demo");
   };
 
   const handleLiveAnalysis = async () => {
     if (!apiKey.trim()) return;
+    setError(null);
+    setData(null);
     setLoading(true);
     setMode("live");
     try {
@@ -30,6 +34,7 @@ const Index = () => {
       });
       setData(results);
     } catch (err) {
+      setError(err instanceof Error ? err.message : "Live analysis failed.");
       console.error(err);
     } finally {
       setLoading(false);
@@ -137,6 +142,12 @@ const Index = () => {
                 </a>
                 {" "}· Note: free tier has rate limits, full scan takes ~25 min
               </p>
+
+              {error && (
+                <p className="rounded-md border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+                  {error}
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -173,6 +184,7 @@ const Index = () => {
                 variant="outline"
                 onClick={() => {
                   setData(null);
+                  setError(null);
                   setMode("idle");
                 }}
               >
