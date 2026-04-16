@@ -20,8 +20,7 @@ async function fetchCandles(
   count: number,
   apiKey: string
 ): Promise<Candle[]> {
-  const symbol = pair.replace("/", "");
-  const url = `${API_BASE}/time_series?symbol=${symbol}&interval=${interval}&outputsize=${count}&apikey=${apiKey}`;
+  const url = `${API_BASE}/time_series?symbol=${encodeURIComponent(pair)}&interval=${interval}&outputsize=${count}&apikey=${apiKey}`;
 
   const res = await fetch(url);
   const data: TwelveDataResponse = await res.json();
