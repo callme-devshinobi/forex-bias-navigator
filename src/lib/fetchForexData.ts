@@ -41,13 +41,14 @@ async function fetchCandles(
 
 export async function analyzeAllPairs(
   apiKey: string,
+  pairs: readonly string[] = FOREX_PAIRS,
   onProgress?: (current: number, total: number, pair: string) => void
 ): Promise<PairAnalysis[]> {
   const results: PairAnalysis[] = [];
-  const total = FOREX_PAIRS.length * TIMEFRAMES.length;
+  const total = pairs.length * TIMEFRAMES.length;
   let current = 0;
 
-  for (const pair of FOREX_PAIRS) {
+  for (const pair of pairs) {
     const biases: Record<string, Bias> = {};
 
     for (const tf of TIMEFRAMES) {
@@ -74,10 +75,10 @@ export async function analyzeAllPairs(
 }
 
 // Demo mode with simulated analysis
-export function generateDemoData(): PairAnalysis[] {
+export function generateDemoData(pairs: readonly string[] = FOREX_PAIRS): PairAnalysis[] {
   const biasOptions: Bias[] = ["Bullish", "Bearish", "Neutral"];
 
-  return FOREX_PAIRS.map((pair) => {
+  return pairs.map((pair) => {
     const biases: Record<string, Bias> = {};
     let seed = 0;
     for (let i = 0; i < pair.length; i++) seed += pair.charCodeAt(i);
