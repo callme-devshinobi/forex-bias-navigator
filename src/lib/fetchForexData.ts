@@ -48,7 +48,7 @@ export async function analyzeAllPairs(
   let current = 0;
 
   for (const pair of FOREX_PAIRS) {
-    const biases: Record<string, string> = {};
+    const biases: Record<string, Bias> = {};
 
     for (const tf of TIMEFRAMES) {
       try {
@@ -75,11 +75,10 @@ export async function analyzeAllPairs(
 
 // Demo mode with simulated analysis
 export function generateDemoData(): PairAnalysis[] {
-  const biasOptions = ["Bullish", "Bearish", "Neutral"] as const;
+  const biasOptions: Bias[] = ["Bullish", "Bearish", "Neutral"];
 
-  // Use a seeded-like approach based on pair name for consistency
   return FOREX_PAIRS.map((pair) => {
-    const biases: Record<string, string> = {};
+    const biases: Record<string, Bias> = {};
     let seed = 0;
     for (let i = 0; i < pair.length; i++) seed += pair.charCodeAt(i);
 
